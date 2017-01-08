@@ -24,7 +24,7 @@ This script is using for monitoring MySQL Group Replication in **Multi-Primary M
 - MGR(MySQL Group Replication) run in multi-primary Mode
 - Only one node to be write node at a time
 
-### Configuation
+### Configuration
 
 Support we have one MGR group with 3 node deploy in multi-primary mode:
 
@@ -118,3 +118,23 @@ gr_mw_mode_sw_cheker.sh writehostgroup_id readhostgroup_id [writeNodeCanRead] [l
  - *arg2* -> readhostgroup_id
  - *arg3* -> writeNodeCanRead, 1(YES, the default value), 0(NO)
  - *arg4* -> log file, default: `'./checker.log'`
+
+## gr_sw_mode_checker.sh
+
+This script is using for monitoring MySQL Group Replication in **Single-Primary Mode**, so the limit is also : **there is only one node to be write node at a time.**
+
+### Features and Limitations
+
+#### Features
+
+ - Read-Write split
+ - Switch over automatic when single write node failure
+
+#### Limitations
+
+ - MGR(MySQL Group Replication) run in single-primary Mode
+ - Only one node to be write node at a time
+
+### Configuration
+
+the same configuration step as [gr_mw_mode_sw_cheker.sh](https://github.com/ZzzCrazyPig/proxysql_groupreplication_checker#gr_mw_mode_sw_cheker.sh), just in **step 4)**, replace the script with `gr_sw_mode_cheker.sh`
