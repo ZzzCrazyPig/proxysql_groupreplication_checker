@@ -93,7 +93,7 @@ do
         debug "isOK : $isOK, write node can not be read, will update node status to OFFLINE_SOFT [hostgroup_id: $readGroupId, hostname: $hostname, port: $port]"
         $proxysql_cmd "UPDATE mysql_servers SET status = 'OFFLINE_SOFT' WHERE hostgroup_id = $readGroupId AND hostname = '$hostname' AND port = $port; ${update_servers_cmd_opts}" 2>> $errFile
       else
-        if [ "$status" != "OFFLINE" ]; then
+        if [ "$status" != "ONLINE" ]; then
           debug "isOK : $isOK, write node can be read, will update node status to ONLINE [hostgroup_id: $readGroupId, hostname: $hostname, port: $port]"
           $proxysql_cmd "UPDATE mysql_servers SET status = 'ONLINE' WHERE hostgroup_id = $writeGroupId AND hostname = '$hostname' AND port = $port; ${update_servers_cmd_opts}" 2>> $errFile
           $proxysql_cmd "UPDATE mysql_servers SET status = 'ONLINE' WHERE hostgroup_id = $readGroupId AND hostname = '$hostname' AND port = $port; ${update_servers_cmd_opts}" 2>> $errFile
