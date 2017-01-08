@@ -94,11 +94,14 @@ SAVE MYSQL SERVERS TO DISK;
 
 First, put the script `gr_mw_mode_sw_cheker.sh` to path : `/var/lib/proxysql/`
 
-Finally, we just need to config our script into proxysql scheduler:
+Finally, we just need to config our script into proxysql scheduler and load it to runtime and even save to disk:
 
 ```sql
 insert into scheduler(id, active, interval_ms, filename, arg1, arg2, arg3, arg4)
   values(1, 1, 5000, '/var/lib/proxysql/gr_mw_mode_sw_checker.sh', 1, 2, 1, '/var/lib/proxysql/checker.log');
+
+LOAD SCHEDULER TO RUNTIME;
+SAVE SCHEDULER TO DISK;
 ```
 
 - *active* : 1: enable scheduler to schedule the script we provide
@@ -112,12 +115,12 @@ The script Usage:
 gr_mw_mode_sw_cheker.sh writehostgroup_id readhostgroup_id [writeNodeCanRead] [log file]
 ```
 
- So :
+So :
 
- - *arg1* -> writehostgroup_id
- - *arg2* -> readhostgroup_id
- - *arg3* -> writeNodeCanRead, 1(YES, the default value), 0(NO)
- - *arg4* -> log file, default: `'./checker.log'`
+- *arg1* -> writehostgroup_id
+- *arg2* -> readhostgroup_id
+- *arg3* -> writeNodeCanRead, 1(YES, the default value), 0(NO)
+- *arg4* -> log file, default: `'./checker.log'`
 
 ## gr_sw_mode_checker.sh
 
@@ -127,13 +130,13 @@ This script is using for monitoring MySQL Group Replication in **Single-Primary 
 
 #### Features
 
- - Read-Write split
- - Switch over automatic when single write node failure
+- Read-Write split
+- Switch over automatic when single write node failure
 
 #### Limitations
 
- - MGR(MySQL Group Replication) run in single-primary Mode
- - Only one node to be write node at a time
+- MGR(MySQL Group Replication) run in single-primary Mode
+- Only one node to be write node at a time
 
 ### Configuration
 
