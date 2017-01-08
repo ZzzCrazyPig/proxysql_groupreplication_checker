@@ -26,7 +26,7 @@ This script is using for monitoring MySQL Group Replication in **Multi-Primary M
 
 ### Configuration
 
-Support we have one MGR group with 3 node deploy in multi-primary mode:
+Assume that we have one MGR group with 3 node deploy in multi-primary mode:
 
 ```sql
 mysql> SELECT * FROM performance_schema.replication_group_members;
