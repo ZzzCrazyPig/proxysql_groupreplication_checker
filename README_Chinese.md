@@ -1,14 +1,14 @@
 # 介绍
 
-利用ProxySQL可以为MySQL Group Replication(后面简称MGR) 提供高可用及读写分离方案。这个项目里面主要提供了几个可以被ProxySQL scheduler调度，用于监控MGR成员状态，实现MGR高可用，读写分离且写故障切换的功能。
+利用ProxySQL可以为MySQL Group Replication(后面简称MGR) 提供高可用及读写分离方案。这个项目里面主要提供了几个可以被ProxySQL scheduler调度，用于监控MGR成员状态，实现MGR高可用，读写分离且写故障切换功能的脚本。
 
 ## proxysql_groupreplication_checker.sh
 
-用于监控MySQL Group Replication成员状态的示例shell脚本。
+用于监控MySQL Group Replication成员状态的示例shell脚本。只提供了读写分离功能，但是没有提供写节点故障切换功能。
 
 修改自 : [https://github.com/lefred/proxysql_groupreplication_checker](https://github.com/lefred/proxysql_groupreplication_checker)
 
-> Tip: 后面脚本的设计灵感来自这个示例脚本。
+> Tip: 后面脚本的设计灵感来自这个示例脚本，在实现读写分离功能的基础上，实现写节点故障自动切换功能。
 
 ## gr_mw_mode_sw_cheker.sh
 
@@ -90,7 +90,7 @@ LOAD MYSQL SERVERS TO RUNTIME;
 SAVE MYSQL SERVERS TO DISK;
 ```
 
-4) 配置scheduler
+**4) 配置scheduler**
 
 首先，将我们提供的脚本`gr_mw_mode_sw_cheker.sh`放到目录`/var/lib/proxysql/`下
 
