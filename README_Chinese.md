@@ -1,14 +1,31 @@
 # 介绍
 
-利用ProxySQL可以为MySQL Group Replication(后面简称MGR) 提供高可用及读写分离方案。这个项目里面主要提供了几个可以被ProxySQL scheduler调度，用于监控MGR成员状态，实现MGR高可用，读写分离且写故障切换功能的脚本。
+根据博客[HA with MySQL Group Replication and ProxySQL](http://lefred.be/content/ha-with-mysql-group-replication-and-proxysql/)的介绍，利用ProxySQL可以为MySQL Group Replication(后面简称MGR) 提供高可用及读写分离方案。这个项目里面主要提供了几个可以被ProxySQL scheduler调度，用于监控MGR成员状态，实现MGR高可用，读写分离且写故障切换功能的脚本。
 
 ## proxysql_groupreplication_checker.sh
 
-用于监控MySQL Group Replication成员状态的示例shell脚本。只提供了读写分离功能，但是没有提供写节点故障切换功能。
+脚本修改自 : [https://github.com/lefred/proxysql_groupreplication_checker](https://github.com/lefred/proxysql_groupreplication_checker)，提供了MGR Multi-Primary 模式下读写分离功能，以及写节点故障切换功能。
 
-修改自 : [https://github.com/lefred/proxysql_groupreplication_checker](https://github.com/lefred/proxysql_groupreplication_checker)
+### 特性和限制
 
-> Tip: 后面脚本的设计灵感来自这个示例脚本，在实现读写分离功能的基础上，实现写节点故障自动切换功能。
+#### 特性
+
+- 读写分离
+- 同一时刻可以有多个写节点
+- 写节点故障切换
+
+#### 限制
+
+- MGR只能是Multi-Primary Mode。
+
+
+目前，MGR多写特性仍然不够完善，在多个节点并发写很可能出现写冲突，因此，在实际应用中，我们的场景是: 只有一个节点用于写，其他节点用于读。
+
+同时我们要支持MGR的两种模式: Multi-Primary Mode和Single-Primary Mode
+
+于是，就诞生了接下来的两个脚本:
+
+> Tip: 后面脚本的设计灵感来自这个示例脚本
 
 ## gr_mw_mode_sw_cheker.sh
 
@@ -74,6 +91,15 @@ insert into mysql_servers (hostgroup_id, hostname, port) values(2, '127.0.0.1', 
 
 `hostgroup_id = 1`代表write group，针对我们提出的限制，这个地方只配置了一个节点；`hostgroup_id = 2`代表read group，包含了MGR的所有节点。
 
+然后，加入读写分离规则，让所有的SELECT操作路由到hostgroup_id为2的hostgroup:
+
+```sql
+insert into mysql_query_rules (active, match_pattern, destination_hostgroup, apply) 
+values (1,"^SELECT",2,1);
+```
+
+> 这么做会引起所有的SELECT .. FOR UPDATE也发到hostgroup_id为2的hostgroup，更细粒度的正则表达式能够避免这个情况，这里不讨论这个细粒度的实现。
+
 接下来我们需要修改proxysql的监控用户和密码为我们上面 **step 1)** 提供的用户和密码。
 
 ```sql
@@ -81,13 +107,15 @@ UPDATE global_variables SET variable_value='proxysql' WHERE variable_name='mysql
 UPDATE global_variables SET variable_value='proxysql' WHERE variable_name='mysql-monitor_password';
 ```
 
-最后我们需要将`global_variables`和`mysql_servers`表的信息加载到RUNTIME，更进一步加载到DISK:
+最后我们需要将`global_variables`，`mysql_servers`和`mysql_query_rules`表的信息加载到RUNTIME，更进一步加载到DISK:
 
 ```sql
 LOAD MYSQL VARIABLES TO RUNTIME;
 SAVE MYSQL VARIABLES TO DISK;
 LOAD MYSQL SERVERS TO RUNTIME;
 SAVE MYSQL SERVERS TO DISK;
+LOAD MYSQL QUERY RULES TO RUNTIME;
+SAVE MYSQL QUERY RULES TO DISK;
 ```
 
 **4) 配置scheduler**
@@ -130,6 +158,8 @@ gr_mw_mode_sw_cheker.sh writehostgroup_id readhostgroup_id [writeNodeCanRead] [l
 
 - 读写分离
 - 写节点故障自动切换
+
+> 当写节点故障，脚本会寻找下一个真正的写节点，进行故障切换，这个过程比Multi-Primary Mode要复杂些。
 
 #### 限制
 

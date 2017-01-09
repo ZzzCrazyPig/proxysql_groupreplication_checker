@@ -1,12 +1,26 @@
 # Introduction
 
-Provide several shell scripts to be used in ProxySQL scheduler in order to monitor MySQL Group Replication members !
+According to the blog [HA with MySQL Group Replication and ProxySQL](http://lefred.be/content/ha-with-mysql-group-replication-and-proxysql/), we can use ProxySQL to make HA with MySQL Group Replication(MGR), and even we can realize Read-Write split above it. This project provides several shell scripts to be used in ProxySQL scheduler in order to meet the function we memtion.
 
 ## proxysql_groupreplication_checker.sh
 
 This script is an example of scheduler that can be used with ProxySQL to monitor MySQL Group Replication members
 
 Modify from : [https://github.com/lefred/proxysql_groupreplication_checker](https://github.com/lefred/proxysql_groupreplication_checker)
+
+### Features and Limitations
+
+#### Features
+
+- Read-Write split
+- Multi Write node
+- Automatic switch over when write node fail
+
+#### Limitations
+
+- MGR must run in multi-primary mode
+
+In general, we just need one write node and other node to be read, and we need to adapt MGR two mode: Multi-Primary Mode and Single-Primary Mode, so the scripts below come into the world.
 
 ## gr_mw_mode_sw_cheker.sh
 
@@ -17,11 +31,11 @@ This script is using for monitoring MySQL Group Replication in **Multi-Primary M
 #### Features
 
 - Read-Write split
-- Switch over automatic when single write node failure
+- Automatic switch over when single write node fail
 
 #### Limitations
 
-- MGR(MySQL Group Replication) run in multi-primary Mode
+- MGR must run in multi-primary Mode
 - Only one node to be write node at a time
 
 ### Configuration
@@ -74,6 +88,17 @@ insert into mysql_servers (hostgroup_id, hostname, port) values(2, '127.0.0.1', 
 
 `hostgroup_id = 1` represent the write group, and we have only one write node at a time, `hostgroup_id = 2` represent the read group and it includes all the MGR members.
 
+It’s time to add some routing rules to be able to use those hostgroups:
+
+```sql
+insert into mysql_query_rules (active, match_pattern, destination_hostgroup, apply) 
+values (1,"^SELECT",2,1);
+```
+
+We will route all queries starting by select to hostgroup which hostgroup_id is 2.
+
+> This is not a recommendation of course a we will also send to hostgroup 2 all SELECT… FOR UPDATE, for example
+
 And then we need to change the default proxysql monitor user and password we create in **step 1)**
 
 ```sql
@@ -81,13 +106,15 @@ UPDATE global_variables SET variable_value='proxysql' WHERE variable_name='mysql
 UPDATE global_variables SET variable_value='proxysql' WHERE variable_name='mysql-monitor_password';
 ```
 
-Finally we can load the `global_variables` and `mysql_servers` to runtime and even to disk:
+Finally we can load `global_variables`, `mysql_servers`, `mysql_query_rules` to runtime and even to disk:
 
 ```sql
 LOAD MYSQL VARIABLES TO RUNTIME;
 SAVE MYSQL VARIABLES TO DISK;
 LOAD MYSQL SERVERS TO RUNTIME;
 SAVE MYSQL SERVERS TO DISK;
+LOAD MYSQL QUERY RULES TO RUNTIME;
+SAVE MYSQL QUERY RULES TO DISK;
 ```
 
 **4) config scheduler**
